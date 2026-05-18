@@ -1,22 +1,16 @@
 import { create } from 'zustand';
 import { TOOLS, TOOL_DEFAULTS } from '../utils/constants';
 
-// Board mode presets
-const MODES = {
-  blackboard: { boardColor: '#000000', color: '#FFFFFF' },
-  whiteboard: { boardColor: '#f7f4ef', color: '#1a1a1a' }, // warm matte paper
-};
-
 export const useCanvasStore = create((set) => ({
   activeTool:      TOOLS.PEN,
   color:           '#FFFFFF',
-  brushSize:       5,
+  brushSize:       4,
   opacity:         1.0,
   pressureCurve:   'medium',
   pressureEnabled: true,
-  boardColor:      '#000000',   // pure black default
+  boardColor:      '#1a1a2e',
   zoom:            1.0,
-  boardMode:       'blackboard', // 'blackboard' | 'whiteboard'
+  boardMode:       'blackboard',
 
   setActiveTool: (tool) => set((s) => ({
     activeTool: tool,
@@ -28,12 +22,11 @@ export const useCanvasStore = create((set) => ({
   setOpacity:         (opacity) => set({ opacity }),
   setPressureCurve:   (curve)   => set({ pressureCurve: curve }),
   setPressureEnabled: (val)     => set({ pressureEnabled: val }),
-  setZoom:            (zoom)    => set({ zoom }),
+  setZoom:            (zoom)    => set({ zoom: Math.max(0.1, Math.min(5.0, zoom)) }),
   setBoardColor:      (color)   => set({ boardColor: color }),
-
-  // Toggle between blackboard and whiteboard — swaps bg + ink color
-  toggleBoardMode: () => set((s) => {
-    const next = s.boardMode === 'blackboard' ? 'whiteboard' : 'blackboard';
-    return { boardMode: next, ...MODES[next] };
+  setBoardMode:       (mode)    => set({
+    boardMode: mode,
+    boardColor: mode === 'blackboard' ? '#1a1a2e' : '#FFFFFF',
+    color: mode === 'blackboard' ? '#FFFFFF' : '#000000',
   }),
 }));

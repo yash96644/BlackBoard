@@ -1,16 +1,20 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
-import TopBar from './components/Toolbar/TopBar';
+import { useRef, useCallback, useEffect } from 'react';
 import BlackboardCanvas from './components/Canvas/BlackboardCanvas';
-import BottomToolbar from './components/BottomBar/BottomToolbar';
 import { useBoardStore } from './store/boardStore';
+import { useAuthStore } from './store/authStore';
 import { useCanvasStore } from './store/canvasStore';
-import { useHistoryStore } from './store/historyStore';
+import TitleBar from './components/TitleBar/TitleBar';
+import Header from './components/Header/Header';
+import LeftSidebar from './components/LeftSidebar/LeftSidebar';
+import ZoomControls from './components/ZoomControls/ZoomControls';
+import BoardControls from './components/BoardControls/BoardControls';
+import PageTabs from './components/PageTabs/PageTabs';
 import { loadBoard } from './utils/storageUtils';
 import { exportAsPNG } from './utils/exportUtils';
 
 // Helper: load a page's saved image onto the canvas
 function loadPageOntoCanvas(canvas, pageData) {
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (!pageData) return;
   const img = new Image();
@@ -19,20 +23,22 @@ function loadPageOntoCanvas(canvas, pageData) {
 }
 
 export default function App() {
-  const canvasRef  = useRef(null);
-  const [toast, setToast] = useState(null);
-  const toastTimer = useRef(null);
-
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
-  }, []);
+  const canvasRef = useRef(null);
 
   // ── Startup: restore saved board ────────────────────────────
   useEffect(() => {
-    const saved = loadBoard();
-    if (!saved) return;
+    const user = useAuthStore.getState().user;
+    if (!user) return;
+    const saved = loadBoard(user.id);
+    if (!saved) {
+      useBoardStore.getState().resetAll();
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      return;
+    }
     try {
       const { setPages, setActivePage } = useBoardStore.getState();
       if (saved.pages?.length) {
@@ -54,85 +60,57 @@ export default function App() {
     } catch { /* corrupt data */ }
   }, []);
 
-  // ── Blackboard ↔ Whiteboard toggle ──────────────────────────
-  // Each mode has its own dedicated page. Switching saves the current
-  // canvas to the current page, then loads (or creates) the target page.
-  const handleToggleMode = useCallback(() => {
-    const canvas = canvasRef.current;
-    const { boardMode, toggleBoardMode } = useCanvasStore.getState();
-    const store = useBoardStore.getState();
-
-    // 1. Save current canvas content to the current page
-    if (canvas) {
-      store.savePageData(store.activePage, canvas.toDataURL());
-    }
-
-    const nextMode = boardMode === 'blackboard' ? 'whiteboard' : 'blackboard';
-
-    if (nextMode === 'whiteboard') {
-      // 2a. Get or create the dedicated whiteboard page
-      let wbId = store.whiteboardPageId;
-      const wbPageExists = wbId && store.pages.find(p => p.id === wbId);
-
-      if (!wbPageExists) {
-        // First time — create a fresh whiteboard page
-        useBoardStore.getState().createWhiteboardPage();
-        wbId = useBoardStore.getState().whiteboardPageId;
-        // Canvas is already blank — nothing to load
-      } else {
-        // Page exists — switch and restore its content
-        useBoardStore.getState().setActivePage(wbId);
-        const wbPage = useBoardStore.getState().pages.find(p => p.id === wbId);
-        if (canvas) loadPageOntoCanvas(canvas, wbPage?.data ?? null);
-      }
-    } else {
-      // 2b. Switch back to the blackboard page
-      const bbId = store.blackboardPageId;
-      useBoardStore.getState().setActivePage(bbId);
-      const bbPage = useBoardStore.getState().pages.find(p => p.id === bbId);
-      if (canvas) loadPageOntoCanvas(canvas, bbPage?.data ?? null);
-    }
-
-    // 3. Flip the mode (updates boardColor + ink color in canvasStore)
-    toggleBoardMode();
-    // 4. Reset undo/redo history for the new board
-    useHistoryStore.getState().reset();
-  }, []);
-
   // ── Save ────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const { savePageData, activePage } = useBoardStore.getState();
+    const userId = useAuthStore.getState().user?.id;
     savePageData(activePage, canvas.toDataURL());
     import('./utils/storageUtils').then(({ saveBoard }) => {
-      const result = saveBoard(useBoardStore.getState().pages);
-      if (result === 'quota') showToast('⚠️ Storage full');
-      else if (result) showToast('✅ Saved');
+      saveBoard(useBoardStore.getState().pages, userId);
     });
-  }, [showToast]);
+  }, []);
 
   // ── Export ──────────────────────────────────────────────────
   const handleExport = useCallback(() => {
     const canvas = canvasRef.current;
-    if (canvas) { exportAsPNG(canvas); showToast('📥 Exported as PNG'); }
-  }, [showToast]);
+    if (canvas) { exportAsPNG(canvas); }
+  }, []);
+
+  const boardMode = useCanvasStore((s) => s.boardMode);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <TopBar onToggleMode={handleToggleMode} />
+    <div className={`flex flex-col h-screen w-screen overflow-hidden ${boardMode === 'whiteboard' ? 'bg-gray-100' : 'bg-[#0f0f1a]'} select-none`}>
+      <TitleBar />
+      
+      {/* TOP HEADER BAR */}
+      <Header onExportPNG={handleExport} canvasRef={canvasRef} />
 
-      <BlackboardCanvas
-        canvasRef={canvasRef}
-        onSave={handleSave}
-        onExport={handleExport}
-        topBarHeight={44}
-        bottomBarHeight={62}
-      />
+      {/* MAIN AREA */}
+      <div className="flex flex-1 overflow-hidden relative">
 
-      <BottomToolbar canvasRef={canvasRef} showToast={showToast} />
+        {/* LEFT SIDEBAR — tools */}
+        <LeftSidebar />
 
-      {toast && <div className="toast">{toast}</div>}
+        {/* CANVAS — fills everything */}
+        <div className="flex-1 relative overflow-hidden">
+          <BlackboardCanvas
+            canvasRef={canvasRef}
+            onSave={handleSave}
+            onExport={handleExport}
+          />
+
+          {/* BOTTOM CENTER — zoom controls */}
+          {/* <ZoomControls canvasRef={canvasRef} /> */}
+
+          {/* TOP RIGHT — page/board controls */}
+          <BoardControls onSave={handleSave} canvasRef={canvasRef} />
+
+          {/* BOTTOM LEFT - page tabs */}
+          <PageTabs canvasRef={canvasRef} />
+        </div>
+      </div>
     </div>
   );
 }

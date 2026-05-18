@@ -16,13 +16,13 @@ const TOOL_LIST = [
   { id: TOOLS.PEN,       icon: Pen,         label: 'Pen (P)'       },
   { id: TOOLS.PENCIL,    icon: Pencil,       label: 'Pencil'        },
   { id: TOOLS.MARKER,    icon: Highlighter,  label: 'Marker (B)'    },
-  { id: TOOLS.CHALK,     icon: Sparkles,     label: 'Chalk'         },
+  // { id: TOOLS.CHALK,     icon: Sparkles,     label: 'Chalk'         },
   { id: TOOLS.ERASER,    icon: Eraser,       label: 'Eraser (E)'    },
   { id: TOOLS.LINE,      icon: Minus,        label: 'Line (L)'      },
   { id: TOOLS.RECTANGLE, icon: Square,       label: 'Rectangle (R)' },
   { id: TOOLS.CIRCLE,    icon: Circle,       label: 'Circle (C)'    },
   { id: TOOLS.TEXT,      icon: Type,         label: 'Text (T)'      },
-  { id: TOOLS.FILL,      icon: PaintBucket,  label: 'Fill (F)'      },
+  // { id: TOOLS.FILL,      icon: PaintBucket,  label: 'Fill (F)'      },
   { id: TOOLS.LASER,     icon: Zap,          label: 'Laser'         },
 ];
 
@@ -97,7 +97,7 @@ export default function BottomToolbar({ canvasRef, showToast }) {
     setActivePage(id);
     const page = useBoardStore.getState().pages.find((p) => p.id === id);
     if (canvas) {
-      const c = canvas.getContext('2d');
+      const c = canvas.getContext('2d', { willReadFrequently: true });
       c.clearRect(0, 0, canvas.width, canvas.height);
       if (page?.data) {
         const img = new Image();
@@ -114,7 +114,7 @@ export default function BottomToolbar({ canvasRef, showToast }) {
     addPage();
     setTimeout(() => {
       const c = cnvs();
-      if (c) { c.getContext('2d').clearRect(0, 0, c.width, c.height); useHistoryStore.getState().reset(); }
+      if (c) { c.getContext('2d', { willReadFrequently: true }).clearRect(0, 0, c.width, c.height); useHistoryStore.getState().reset(); }
     }, 10);
   };
 

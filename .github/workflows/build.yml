@@ -1,0 +1,68 @@
+name: Build Blackboard — Mac + Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:       # allow manual trigger too
+
+jobs:
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npx electron-icon-builder --input=assets/icon.png --output=assets/
+
+      - name: Build for macOS
+        run: npm run electron:build:mac
+
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-build
+          path: |
+            release/*.dmg
+            release/*.zip
+          retention-days: 30
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npx electron-icon-builder --input=assets/icon.png --output=assets/
+
+      - name: Build for Windows
+        run: npm run electron:build:win
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            release/*.exe
+            release/*.appx
+          retention-days: 30

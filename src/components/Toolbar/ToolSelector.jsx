@@ -2,22 +2,20 @@ import { useCanvasStore } from '../../store/canvasStore';
 import { TOOLS } from '../../utils/constants';
 import {
   Pen, Pencil, Highlighter, Eraser, Minus,
-  Square, Circle, Type, PaintBucket,
-  Zap, Sparkles,
+  Square, Circle, Type,
+  Zap,
 } from 'lucide-react';
 
 const TOOL_LIST = [
   { id: TOOLS.PEN,       icon: Pen,               label: 'Pen (P)',       shortcut: 'P' },
   { id: TOOLS.PENCIL,    icon: Pencil,             label: 'Pencil',        shortcut: '' },
   { id: TOOLS.MARKER,    icon: Highlighter,        label: 'Marker (B)',    shortcut: 'B' },
-  { id: TOOLS.CHALK,     icon: Sparkles,           label: 'Chalk',         shortcut: '' },
   { id: TOOLS.ERASER,    icon: Eraser,             label: 'Eraser (E)',    shortcut: 'E' },
   { id: TOOLS.LINE,      icon: Minus,              label: 'Line (L)',      shortcut: 'L' },
   { id: TOOLS.RECTANGLE, icon: Square,             label: 'Rectangle (R)', shortcut: 'R' },
   { id: TOOLS.CIRCLE,    icon: Circle,             label: 'Circle (C)',    shortcut: 'C' },
   { id: TOOLS.TEXT,      icon: Type,               label: 'Text (T)',      shortcut: 'T' },
-  { id: TOOLS.FILL,      icon: PaintBucket,        label: 'Fill (F)',      shortcut: 'F' },
-  { id: TOOLS.LASER,     icon: Zap,                label: 'Laser',         shortcut: '' },
+  { id: TOOLS.LASER,     icon: Zap,                label: 'Laser Pointer — marks stay until erased', shortcut: '' },
 ];
 
 export default function ToolSelector() {

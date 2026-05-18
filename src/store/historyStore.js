@@ -9,28 +9,61 @@ export const useHistoryStore = create((set, get) => ({
     future: [],
   })),
 
-  undo: (ctx, canvas) => {
+  undo: (committedRef) => {
     const { past, future } = get();
     if (past.length === 0) return;
-    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const prev = past[past.length - 1];
+
+    const committed = committedRef?.current;
+    if (!committed) return;
+
+    const ctx     = committed.getContext('2d');
+    const current = ctx.getImageData(
+      0, 0, committed.width, committed.height
+    );
+    const prev    = past[past.length - 1];
+
     ctx.putImageData(prev, 0, 0);
-    set({ past: past.slice(0, -1), future: [current, ...future] });
+    set({
+      past:   past.slice(0, -1),
+      future: [current, ...future],
+    });
   },
 
-  redo: (ctx, canvas) => {
+  redo: (committedRef) => {
     const { past, future } = get();
     if (future.length === 0) return;
-    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    const committed = committedRef?.current;
+    if (!committed) return;
+
+    const ctx     = committed.getContext('2d');
+    const current = ctx.getImageData(
+      0, 0, committed.width, committed.height
+    );
+
     ctx.putImageData(future[0], 0, 0);
-    set({ past: [...past, current], future: future.slice(1) });
+    set({
+      past:   [...past, current],
+      future: future.slice(1),
+    });
   },
 
-  clear: (ctx, canvas) => {
-    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    set((s) => ({ past: [...s.past.slice(-49), current], future: [] }));
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  clear: (committedRef) => {
+    const committed = committedRef?.current;
+    if (!committed) return;
+
+    const ctx     = committed.getContext('2d');
+    const current = ctx.getImageData(
+      0, 0, committed.width, committed.height
+    );
+
+    set((s) => ({
+      past:   [...s.past.slice(-49), current],
+      future: [],
+    }));
+    ctx.clearRect(0, 0, committed.width, committed.height);
   },
 
   reset: () => set({ past: [], future: [] }),
+  resetAll: () => set({ past: [], future: [] }),
 }));

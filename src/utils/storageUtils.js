@@ -1,8 +1,12 @@
-const KEY = 'blackboard_v1';
+const getKey = (userId) => `blackboard_v1_${userId}`;
 
-export function saveBoard(pages) {
+export function saveBoard(pages, userId) {
+  if (!userId) return false;
   try {
-    localStorage.setItem(KEY, JSON.stringify({ pages, savedAt: Date.now() }));
+    localStorage.setItem(
+      getKey(userId),
+      JSON.stringify({ pages, savedAt: Date.now() })
+    );
     return true;
   } catch (e) {
     if (e.name === 'QuotaExceededError') return 'quota';
@@ -10,15 +14,17 @@ export function saveBoard(pages) {
   }
 }
 
-export function loadBoard() {
+export function loadBoard(userId) {
+  if (!userId) return null;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(getKey(userId));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-export function clearStorage() {
-  localStorage.removeItem(KEY);
+export function clearStorage(userId) {
+  if (!userId) return;
+  localStorage.removeItem(getKey(userId));
 }

@@ -1,6 +1,7 @@
 import { useCanvasStore } from '../../store/canvasStore';
+import UserMenu from './UserMenu';
 
-export default function TopBar({ onToggleMode }) {
+export default function TopBar({ onToggleMode, macPadding = false }) {
   const { zoom, setZoom, boardMode } = useCanvasStore();
   const isWhiteboard = boardMode === 'whiteboard';
 
@@ -10,7 +11,7 @@ export default function TopBar({ onToggleMode }) {
       background: 'rgba(8, 8, 12, 0.98)',
       borderBottom: '1px solid #111827',
       display: 'flex', alignItems: 'center',
-      padding: '0 14px', gap: 10,
+      padding: macPadding ? '0 14px 0 80px' : '0 14px', gap: 10,
       flexShrink: 0, zIndex: 50,
       userSelect: 'none',
     }}>
@@ -80,6 +81,11 @@ export default function TopBar({ onToggleMode }) {
           <button onClick={() => setZoom(1)} title="Reset zoom" style={{ ...zBtn, fontSize: 10 }}>↺</button>
         )}
       </div>
+
+      <div style={{ width: 1, height: 20, background: '#1f2937' }} />
+
+      {/* User avatar + dropdown */}
+      <UserMenu />
     </div>
   );
 }
