@@ -7,7 +7,6 @@
   "private": true,
   "version": "1.0.0",
   "main": "electron/main.cjs",
-
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -22,17 +21,14 @@
     "electron:build:mas": "vite build && electron-builder --mac mas",
     "generate:icons": "electron-icon-builder --input=assets/icon.png --output=assets/"
   },
-
   "build": {
     "appId": "com.blackboard.app",
     "productName": "Blackboard",
     "copyright": "Copyright © 2025",
-
     "asar": true,
     "compression": "maximum",
     "nodeGypRebuild": false,
     "buildDependenciesFromSource": false,
-
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -53,15 +49,18 @@
       "!tailwind.config.js",
       "!BlackboardApp.code-workspace"
     ],
-
     "directories": {
       "output": "release",
       "buildResources": "assets"
     },
-
     "mac": {
       "protocols": [
-        { "name": "Blackboard", "schemes": ["blackboard"] }
+        {
+          "name": "Blackboard",
+          "schemes": [
+            "blackboard"
+          ]
+        }
       ],
       "category": "public.app-category.productivity",
       "icon": "assets/icon.icns",
@@ -71,10 +70,15 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ]
     },
-
     "mas": {
       "type": "distribution",
       "category": "public.app-category.productivity",
@@ -83,31 +87,40 @@
       "entitlements": "build/entitlements.mas.plist",
       "entitlementsInherit": "build/entitlements.mas.inherit.plist"
     },
-
     "win": {
       "protocols": [
-        { "name": "Blackboard", "schemes": ["blackboard"] }
+        {
+          "name": "Blackboard",
+          "schemes": [
+            "blackboard"
+          ]
+        }
       ],
       "icon": "assets/icon.ico",
       "verifyUpdateCodeSignature": false,
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
-
     "dmg": {
       "title": "Install Blackboard",
       "sign": false,
-      "window": { "width": 540, "height": 380 }
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
-
     "nsis": {
       "oneClick": true,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "deleteAppDataOnUninstall": true
     },
-
     "appx": {
       "applicationId": "Blackboard",
       "backgroundColor": "#111827",
@@ -116,11 +129,7 @@
       "publisherDisplayName": "Blackboard"
     }
   },
-
-  "dependencies": {},
-
   "devDependencies": {
-    "electron": "^42.1.0",
     "@eslint/js": "^10.0.1",
     "@supabase/supabase-js": "^2.105.4",
     "@types/react": "^19.2.14",
@@ -129,15 +138,16 @@
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "esbuild": "^0.28.0",
+    "electron": "^42.1.0",
     "electron-builder": "^26.8.1",
     "electron-icon-builder": "^2.0.1",
+    "esbuild": "^0.28.0",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
-    "jspdf": "^4.2.1",
     "jsdom": "^29.1.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.16.0",
     "perfect-freehand": "^1.2.3",
     "postcss": "^8.5.14",
