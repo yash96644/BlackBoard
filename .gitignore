@@ -33,3 +33,8 @@ release/
 
 # Icons (generated from icon.png)
 assets/icons/
+
+# Additional required ignores
+.env.development
+Thumbs.db
+*.code-workspace
