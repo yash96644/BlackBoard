@@ -6,16 +6,11 @@ export default defineConfig({
   base: './',
 
   build: {
-    outDir: 'dist',
+    outDir:      'dist',
     emptyOutDir: true,
-    minify: 'esbuild',
-    target: 'es2020',
-    sourcemap: false,
-
-    esbuildOptions: {
-      drop: ['console', 'debugger'],
-      legalComments: 'none',
-    },
+    minify:      'oxc',      // Vite 8 native — no esbuild needed
+    target:      'es2020',
+    sourcemap:   false,
 
     rollupOptions: {
       output: {
@@ -27,9 +22,9 @@ export default defineConfig({
           if (id.includes('node_modules/jspdf')) return 'pdf';
           if (id.includes('node_modules/zustand')) return 'state';
         },
-        chunkFileNames:  'assets/[name]-[hash].js',
-        entryFileNames:  'assets/[name]-[hash].js',
-        assetFileNames:  'assets/[name]-[hash].[ext]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
 
@@ -37,7 +32,7 @@ export default defineConfig({
   },
 
   server: {
-    port: 5173,
+    port:       5173,
     strictPort: true,
   },
 
