@@ -1,11 +1,14 @@
 import React from 'react';
-import { Layers } from 'lucide-react';
+import { Layers, Download } from 'lucide-react';
 import ExportButton from './ExportButton';
 import UserAvatar from './UserAvatar';
 import { useCanvasStore } from '../../store/canvasStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const Header = React.memo(({ onExportPNG, canvasRef }) => {
-  const { boardMode, setBoardMode } = useCanvasStore();
+  const { boardMode, setBoardMode } = useCanvasStore(
+    useShallow((s) => ({ boardMode: s.boardMode, setBoardMode: s.setBoardMode }))
+  );
 
   const handleToggleMode = (mode) => {
     if (boardMode === mode) return;
@@ -63,8 +66,18 @@ const Header = React.memo(({ onExportPNG, canvasRef }) => {
 
       </div>
 
-      {/* Right: Export + Avatar */}
+      {/* Right: Actions + Avatar */}
       <div className="flex items-center gap-3">
+        <a
+          href="https://github.com/yash96644/BlackBoard/releases/download/v-1.0.0/Blackboard.Setup.1.0.0.exe"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#12121a]/80 backdrop-blur-md border border-white/10 text-gray-200 hover:text-white text-xs font-semibold rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-[1px] hover:bg-[#1a1a24]/90 hover:border-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] active:scale-95"
+          aria-label="Download Desktop App"
+        >
+          <Download size={14} />
+          <span>Desktop</span>
+        </a>
         <ExportButton onExportPNG={onExportPNG} />
         <UserAvatar />
       </div>

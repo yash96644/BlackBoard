@@ -5,7 +5,6 @@ import { useCanvasStore } from '../../store/canvasStore';
 
 const BoardControls = React.memo(({ onSave, canvasRef }) => {
   const { undo, redo, canUndo, canRedo } = useHistoryStore();
-  const boardColor = useCanvasStore((s) => s.boardColor);
   const boardMode = useCanvasStore((s) => s.boardMode);
   const isWhiteboard = boardMode === 'whiteboard';
 
@@ -16,25 +15,11 @@ const BoardControls = React.memo(({ onSave, canvasRef }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.fillStyle = useCanvasStore.getState().boardColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Redraw grid if whiteboard
-    if (useCanvasStore.getState().boardColor === '#FFFFFF') {
-      ctx.strokeStyle = '#f3f4f6';
-      ctx.lineWidth = 1;
-      const gridSize = 40;
-      ctx.beginPath();
-      for (let x = 0; x <= canvas.width; x += gridSize) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-      }
-      for (let y = 0; y <= canvas.height; y += gridSize) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-      }
-      ctx.stroke();
-    }
+    // Fix: Only clear the canvas pixels. 
+    // Do NOT fill with boardColor or draw the grid manually.
+    // The background color and grid are handled cleanly by the CSS wrapper in BlackboardCanvas.jsx.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     useHistoryStore.getState().pushSnapshot(ctx.getImageData(0, 0, canvas.width, canvas.height));
   };

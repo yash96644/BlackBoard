@@ -5,8 +5,10 @@ import { TOOLS } from '../../utils/constants';
 import ColorBrushPanel from './ColorBrushPanel';
 import { useShallow } from 'zustand/react/shallow';
 
-const ToolButton = ({ icon: Icon, tool, label, shortcut }) => {
-  const { activeTool, setActiveTool, boardMode } = useCanvasStore();
+const ToolButton = React.memo(({ icon: Icon, tool, label, shortcut }) => {
+  const { activeTool, setActiveTool, boardMode } = useCanvasStore(
+    useShallow(s => ({ activeTool: s.activeTool, setActiveTool: s.setActiveTool, boardMode: s.boardMode }))
+  );
   const isActive = activeTool === tool;
   const isWhiteboard = boardMode === 'whiteboard';
 
@@ -26,7 +28,7 @@ const ToolButton = ({ icon: Icon, tool, label, shortcut }) => {
       <Icon size={20} color={tool === TOOLS.LASER ? '#EF4444' : undefined} />
     </button>
   );
-};
+});
 
 const Divider = ({ isWhiteboard }) => (
   <div className={`w-8 h-px mx-auto my-1 ${isWhiteboard ? 'bg-gray-200' : 'bg-[#2d2d4e]'}`} />
