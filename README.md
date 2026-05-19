@@ -1,197 +1,101 @@
-Blackboard — Professional Drawing & Whiteboard Application
-<div align="center">
+# Blackboard — Professional Drawing & Whiteboard Application
 
-A modern high-performance whiteboard and drawing application built with React, Electron, and the HTML5 Canvas API.
+A modern high-performance whiteboard and drawing application built with **React, Electron, and the HTML5 Canvas API**.
 
-Inspired by tools like Miro, FigJam, Excalidraw, and Linear.
+Inspired by tools like **Miro, FigJam, Excalidraw, and Linear**, Blackboard delivers a smooth native drawing experience with optimized rendering, modern UI, and cross-platform desktop support.
 
-⚡ Cross Platform • 🎨 Real-Time Drawing • 💻 Desktop + Web • 🚀 Optimized Rendering
-</div>
-✨ Features
-🖊 Advanced Drawing Engine
-Pen Tool
-Pencil Tool
-Marker Tool
-Eraser Tool
-Laser Tool
-Line Tool
-Rectangle Tool
-Circle Tool
-Text Tool
-🎨 Professional Canvas Experience
-Dual Canvas Rendering Architecture
-Smooth pressure-sensitive strokes
-perfect-freehand integration
-Real-time rendering optimizations
-Zoom & Pan support
-Infinite-feel drawing workflow
-Blackboard & Whiteboard modes
-⚡ Performance Optimizations
-O(1) incremental rendering
-requestAnimationFrame throttling
-Coalesced pointer events
-Predicted pointer rendering
-Optimized Electron bundle size
-React memoization
-Zustand shallow selectors
-📤 Export Support
+---
 
-Export boards as:
+## ✨ Features
 
-PNG
-JPEG
-PDF
-🔐 Authentication
+* Advanced Drawing Tools
+* Smooth Pressure-Sensitive Strokes
+* Dual Canvas Rendering Architecture
+* Zoom & Pan Support
+* Multi-Board Management
+* Undo / Redo System
+* PNG / JPEG / PDF Export
+* Google, GitHub & Apple Authentication
+* Electron Desktop Application
+* Offline Support
+* Modern Dark UI
 
-Supabase-powered authentication:
+---
 
-Google Login
-GitHub Login
-Apple Login
-📚 Board Management
-Multiple boards/pages
-Auto save
-Undo / Redo
-Board persistence
-Per-user board isolation
-💻 Desktop Application
+## ⚡ Tech Stack
 
-Electron-powered desktop application with:
+* React + Vite
+* Electron
+* Tailwind CSS
+* Zustand
+* HTML5 Canvas API
+* perfect-freehand
+* Supabase Auth
+* jsPDF
+* Playwright + Vitest
 
-Native Windows support
-macOS support
-Offline support
-Deep link OAuth authentication
-Native desktop experience
-🧱 Tech Stack
-Layer	Technology
-Frontend	React + Vite
-Desktop	Electron
-Styling	Tailwind CSS
-State Management	Zustand
-Drawing Engine	HTML5 Canvas API
-Stroke Engine	perfect-freehand
-Authentication	Supabase
-Export	jsPDF
-Deployment	Vercel
-Testing	Playwright + Vitest
-📸 Screenshots
-Blackboard Mode
+---
 
-Add screenshots here
+## 🚀 Live Demo
 
-Whiteboard Mode
+Web App:
+https://black-board-black.vercel.app
 
-Add screenshots here
+Desktop Release:
+https://github.com/yash96644/BlackBoard/releases
 
-Desktop Application
+---
 
-Add screenshots here
+## ⚙️ Installation
 
-🚀 Live Demo
-🌐 Web Application
-
-Blackboard Live App
-
-📥 Desktop Download
-Windows Installer (.exe)
-
-Download the latest desktop release from:
-
-GitHub Releases
-
-⚙️ Installation
-Clone Repository
+```bash
 git clone https://github.com/yash96644/BlackBoard.git
 cd BlackBoard
-Install Dependencies
 npm install
-Run Development Server
-Web
 npm run dev
-Electron
+```
+
+Electron Development:
+
+```bash
 npm run electron:dev
-🏗 Production Build
-Web Build
+```
+
+---
+
+## 🏗 Production Build
+
+Web Build:
+
+```bash
 npm run build
-Windows Desktop Build
+```
+
+Windows Desktop Build:
+
+```bash
 npm run electron:build:win
-macOS Build
-npm run electron:build:mac
-🧪 Testing
-Run Playwright Tests
-npm run test:e2e
-Run Linting
-npm run lint
-Fix Lint Issues
-npm run lint:fix
-📂 Project Structure
-BlackBoard/
-├── electron/
-├── public/
-├── src/
-│   ├── components/
-│   ├── hooks/
-│   ├── store/
-│   ├── utils/
-│   ├── pages/
-│   └── lib/
-├── tests/
-├── package.json
-└── vite.config.js
-🔒 Security
+```
 
-Blackboard follows modern Electron security practices:
+---
 
-contextIsolation enabled
-nodeIntegration disabled
-secure preload bridge
-OAuth deep linking
-isolated renderer process
-📈 Performance
-Optimizations Included
-Incremental rendering pipeline
-Dual canvas architecture
-GPU-friendly rendering
-Optimized bundle splitting
-Canvas redraw minimization
-🛣 Roadmap
-Upcoming Features
-Infinite canvas
-Real-time collaboration
-Cloud sync
-Selection tool
-Sticky notes
-Shape snapping
-Tauri version
-Mobile support
-🤝 Contributing
+## 👨‍💻 Developer
 
-Contributions, suggestions, and feedback are welcome.
-
-Fork the repository
-Create a feature branch
-Commit changes
-Open a Pull Request
-👨‍💻 Developer
 Yash Kumar Gupta
 
-Frontend Developer • Electron Enthusiast • React Developer
+GitHub:
+https://github.com/yash96644
 
-GitHub: yash96644 GitHub
-LinkedIn: Yash Gupta LinkedIn
-⭐ Support
+LinkedIn:
+https://www.linkedin.com/in/yash-gupta-532592288/
 
-If you like this project:
+---
 
-Star the repository
-Share feedback
-Report issues
-Suggest features
-📄 License
+## ⭐ Support
 
-This project is licensed under the MIT License.
+If you like the project:
 
-<div align="center">
-Built with ❤️ using React, Electron, and Canvas API
-</div>
+* Star the repository
+* Share feedback
+* Report bugs
+* Suggest features
