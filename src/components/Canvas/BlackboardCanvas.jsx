@@ -1,25 +1,30 @@
-import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from 'react';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useDrawing } from '../../hooks/useDrawing';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useShortcuts } from '../../hooks/useShortcuts';
 import { TOOLS } from '../../utils/constants';
 import { useHistoryStore } from '../../store/historyStore';
+import { useBoardStore } from '../../store/boardStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useCanvas } from '../../hooks/useCanvas';
-import { CANVAS_SIZE, ensureCanvasSize } from '../../utils/canvasLifecycle';
+import { ensureCanvasSize } from '../../utils/canvasLifecycle';
 import { captureCanvasTransform, pointFromEvent } from '../../utils/liveStroke';
+import { redrawCanvas } from '../../utils/strokeCommit';
 
 export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
   const committedRef = canvasRef || useRef(null);
   const activeRef = useRef(null);
   const containerRef = useRef(null);
-  const { activeTool, color, brushSize, boardColor, zoom } = useCanvasStore(
+  const eraserRef = useRef(null);
+
+  const { activeTool, color, brushSize, boardColor, zoom, boardMode } = useCanvasStore(
     useShallow((s) => ({
       activeTool: s.activeTool,
       color:      s.color,
       brushSize:  s.brushSize,
       boardColor: s.boardColor,
       zoom:       s.zoom,
+      boardMode:  s.boardMode,
     }))
   );
 
@@ -35,15 +40,30 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
 
   useShortcuts(committedRef, activeRef, onSave, onExport);
 
-  // Initialise backing store once; never reset width/height on re-render
-  useLayoutEffect(() => {
-    const committed = committedRef.current;
-    const active = activeRef.current;
-    if (!committed || !active) return;
+  // Dynamic viewport observer for canvas dimensions
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    ensureCanvasSize(committed, CANVAS_SIZE, CANVAS_SIZE);
-    ensureCanvasSize(active, CANVAS_SIZE, CANVAS_SIZE);
-    applyTransform();
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+
+      const committed = committedRef.current;
+      const active = activeRef.current;
+      if (committed && active) {
+        const changedCommitted = ensureCanvasSize(committed, width, height);
+        const changedActive = ensureCanvasSize(active, width, height);
+
+        if (changedCommitted || changedActive) {
+          applyTransform();
+        }
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [applyTransform]);
 
   // Tab away finalises stroke
@@ -52,6 +72,15 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
   }, [handlePointerUp]);
+
+  // Redraw when board mode or background color toggles
+  useEffect(() => {
+    const canvas = committedRef.current;
+    if (!canvas) return;
+    const activePage = useBoardStore.getState().activePage;
+    const strokes = useBoardStore.getState().pages.find(p => p.id === activePage)?.data || [];
+    redrawCanvas(canvas, strokes);
+  }, [boardMode, boardColor]);
 
   const handleClick = useCallback((e) => {
     const canvas = activeRef.current;
@@ -87,7 +116,11 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
     const fontSize = brushSize * 4;
     const lineHeight = fontSize + 4;
 
+    const dpr = window.devicePixelRatio || 1;
+    const { zoom: activeZoom, panOffset: activePan } = useCanvasStore.getState();
+
     ctx.save();
+    ctx.setTransform(activeZoom * dpr, 0, 0, activeZoom * dpr, activePan.x * dpr, activePan.y * dpr);
     ctx.globalAlpha = opacity;
     ctx.fillStyle = color;
     ctx.font = `${fontSize}px Inter, sans-serif`;
@@ -96,11 +129,27 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
       ctx.fillText(line, textInput.x, textInput.y + i * lineHeight);
     });
     ctx.restore();
-    setTextInput(null);
 
-    useHistoryStore.getState().pushSnapshot(
-      ctx.getImageData(0, 0, canvas.width, canvas.height)
-    );
+    const newStroke = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      tool: TOOLS.TEXT,
+      x: textInput.x,
+      y: textInput.y,
+      value: textInput.value,
+      color,
+      brushSize,
+      opacity,
+    };
+
+    const activePage = useBoardStore.getState().activePage;
+    const currentPageData = useBoardStore.getState().pages.find(p => p.id === activePage)?.data || [];
+    const updatedStrokes = Array.isArray(currentPageData) ? [...currentPageData, newStroke] : [newStroke];
+
+    // Save vector data to store
+    useBoardStore.getState().savePageData(activePage, updatedStrokes);
+    useHistoryStore.getState().pushSnapshot(updatedStrokes);
+
+    setTextInput(null);
   }, [textInput, color, brushSize]);
 
   // ── Custom cursors ─────────────────────────────────────────────
@@ -108,7 +157,7 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
     if (activeTool === TOOLS.ERASER) return 'none'; // Will draw custom overlay circle
     if ([TOOLS.PEN, TOOLS.PENCIL, TOOLS.MARKER, TOOLS.LINE, TOOLS.RECTANGLE, TOOLS.CIRCLE, TOOLS.LASER].includes(activeTool)) {
       const dotColor = activeTool === TOOLS.LASER ? '#EF4444' : color;
-      const strokeColor = boardColor === '#FFFFFF' ? '#000000' : '#FFFFFF';
+      const strokeColor = boardColor !== '#1a1a2e' ? '#000000' : '#FFFFFF';
       const dotSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2" fill="${encodeURIComponent(dotColor)}" stroke="${encodeURIComponent(strokeColor)}" stroke-width="1"/></svg>`;
       return `url('data:image/svg+xml;utf8,${dotSvg}') 5 5, crosshair`;
     }
@@ -116,12 +165,16 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
     return 'default';
   }, [activeTool, color, boardColor]);
 
-  // ── Eraser Overlay ─────────────────────────────────────────────
-  const [eraserPos, setEraserPos] = useState({ x: -9999, y: -9999 });
+  // ── Eraser Overlay (Bypasses React rendering) ──────────────────
   const isEraser = activeTool === TOOLS.ERASER;
   useEffect(() => {
     if (!isEraser) return;
-    const handleMove = (e) => setEraserPos({ x: e.clientX, y: e.clientY });
+    const handleMove = (e) => {
+      const el = eraserRef.current;
+      if (el) {
+        el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+      }
+    };
     window.addEventListener('pointermove', handleMove);
     return () => window.removeEventListener('pointermove', handleMove);
   }, [isEraser]);
@@ -133,24 +186,8 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
     backgroundColor: boardColor,
   }), [boardColor]);
 
-  const showGrid = boardColor === '#FFFFFF';
-
-  const canvasCssSize = `${CANVAS_SIZE}px`;
-
   return (
     <div ref={containerRef} style={containerStyle}>
-      {showGrid && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              'linear-gradient(#f3f4f6 1px, transparent 1px), linear-gradient(90deg, #f3f4f6 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
-      )}
-
       {/* ── COMMITTED Canvas ──────────────────────────────────────────── */}
       <canvas
         ref={committedRef}
@@ -158,10 +195,13 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
           touchAction:     'none',
           willChange:      'transform',
           display:         'block',
-          width:           canvasCssSize,
-          height:          canvasCssSize,
+          width:           '100%',
+          height:          '100%',
           transformOrigin: '0 0',
           pointerEvents:   'none',
+          position:        'absolute',
+          top: 0,
+          left: 0,
         }}
       />
 
@@ -173,8 +213,8 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
           touchAction:     'none',
           willChange:      'transform',
           display:         'block',
-          width:           canvasCssSize,
-          height:          canvasCssSize,
+          width:           '100%',
+          height:          '100%',
           transformOrigin: '0 0',
           position:        'absolute',
           top: 0,
@@ -190,16 +230,17 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
       {/* ── Eraser Custom Cursor Overlay ─────────────────────── */}
       {isEraser && (
         <div
+          ref={eraserRef}
           style={{
             position: 'fixed',
-            left: eraserPos.x,
-            top: eraserPos.y,
+            left: 0,
+            top: 0,
             width: brushSize * zoom,
             height: brushSize * zoom,
             borderRadius: '50%',
             border: '1.5px dashed rgba(255,255,255,0.7)',
             backgroundColor: 'rgba(255,255,255,0.1)',
-            transform: 'translate(-50%, -50%)',
+            transform: 'translate3d(-9999px, -9999px, 0) translate(-50%, -50%)',
             pointerEvents: 'none',
             zIndex: 9999,
           }}
@@ -241,3 +282,4 @@ export default function BlackboardCanvas({ onSave, onExport, canvasRef }) {
     </div>
   );
 }
+

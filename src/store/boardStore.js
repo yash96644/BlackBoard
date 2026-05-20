@@ -1,25 +1,13 @@
 import { create } from 'zustand';
+import { redrawCanvas } from '../utils/strokeCommit';
 
 export const useBoardStore = create((set, get) => ({
-  pages: [{ id: 1, name: 'Blackboard', data: null }],
+  pages: [{ id: 1, name: 'Blackboard', data: [] }], // Default page data is an empty stroke list
   activePage: 1,
 
-  // Call this BEFORE switching pages to save current canvas
+  // In vector-based history, page.data is already kept updated in real-time.
   saveCurrentPage: (canvasRef) => {
-    const { pages, activePage } = get();
-    const canvas = canvasRef?.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const imageData = ctx.getImageData(
-      0, 0, canvas.width, canvas.height
-    );
-    set({
-      pages: pages.map((p) =>
-        p.id === activePage
-          ? { ...p, data: imageData }
-          : p
-      ),
-    });
+    // No-op: Completely eliminates getImageData page switch stalls.
   },
 
   // Call this AFTER switching to restore new page canvas
@@ -30,13 +18,18 @@ export const useBoardStore = create((set, get) => ({
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
     if (page?.data) {
-      // Support backward compatibility with base64 data URLs
-      if (typeof page.data === 'string') {
+      if (Array.isArray(page.data)) {
+        // Redraw vector strokes
+        redrawCanvas(canvas, page.data);
+      } else if (typeof page.data === 'string') {
+        // Support backward compatibility with base64 data URLs
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
         img.src = page.data;
       } else {
+        // Support backward compatibility with old ImageData snapshots
         ctx.putImageData(page.data, 0, 0);
       }
     }
@@ -57,7 +50,7 @@ export const useBoardStore = create((set, get) => ({
     return {
       pages: [
         ...s.pages,
-        { id, name: `Board ${s.pages.length + 1}`, data: null }
+        { id, name: `Board ${s.pages.length + 1}`, data: [] }
       ],
       activePage: id,
     };
@@ -79,7 +72,7 @@ export const useBoardStore = create((set, get) => ({
   setPages: (pages) => set({ pages }),
 
   resetAll: () => set({
-    pages: [{ id: 1, name: 'Blackboard', data: null }],
+    pages: [{ id: 1, name: 'Blackboard', data: [] }],
     activePage: 1,
   }),
   

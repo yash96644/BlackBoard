@@ -33,8 +33,9 @@ describe('useDrawing performance contract', () => {
     expect(source).toContain('captureCanvasTransform');
   });
 
-  it('defers heavy history capture to idle time', () => {
-    expect(source).toMatch(/requestIdleCallback|setTimeout/);
-    expect(source).toContain('scheduleHistorySnapshot');
+  it('uses synchronous vector snapshotting', () => {
+    expect(source).toContain('Vector-based snapshot scheduling runs instantly and synchronously.');
+    expect(source).not.toContain('scheduleHistorySnapshot');
   });
 });
+

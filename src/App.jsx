@@ -12,16 +12,6 @@ import PageTabs from './components/PageTabs/PageTabs';
 import { loadBoard } from './utils/storageUtils';
 import { exportAsPNG } from './utils/exportUtils';
 
-// Helper: load a page's saved image onto the canvas
-function loadPageOntoCanvas(canvas, pageData) {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!pageData) return;
-  const img = new Image();
-  img.onload = () => ctx.drawImage(img, 0, 0);
-  img.src = pageData;
-}
-
 export default function App() {
   const canvasRef = useRef(null);
 
@@ -44,18 +34,17 @@ export default function App() {
       if (saved.pages?.length) {
         setPages(saved.pages);
         const firstPage = saved.pages[0];
-        setActivePage(firstPage.id);
-        if (firstPage.data) {
-          const tryRestore = (attempts = 0) => {
-            const canvas = canvasRef.current;
-            if (!canvas || canvas.width === 0) {
-              if (attempts < 20) setTimeout(() => tryRestore(attempts + 1), 100);
-              return;
-            }
-            loadPageOntoCanvas(canvas, firstPage.data);
-          };
-          tryRestore();
-        }
+        
+        // Wait for canvas to mount and initialize active page vector drawing
+        const tryRestore = (attempts = 0) => {
+          const canvas = canvasRef.current;
+          if (!canvas || canvas.width === 0) {
+            if (attempts < 20) setTimeout(() => tryRestore(attempts + 1), 100);
+            return;
+          }
+          setActivePage(firstPage.id, canvasRef);
+        };
+        tryRestore();
       }
     } catch { /* corrupt data */ }
   }, []);
@@ -64,11 +53,17 @@ export default function App() {
   const handleSave = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const { savePageData, activePage } = useBoardStore.getState();
     const userId = useAuthStore.getState().user?.id;
-    savePageData(activePage, canvas.toDataURL());
     import('./utils/storageUtils').then(({ saveBoard }) => {
-      saveBoard(useBoardStore.getState().pages, userId);
+      const result = saveBoard(useBoardStore.getState().pages, userId);
+      const showToast = useCanvasStore.getState().showToast;
+      if (result === 'quota') {
+        showToast('⚠️ Storage full — cannot save');
+      } else if (result) {
+        showToast('✅ Board saved successfully');
+      } else {
+        showToast('❌ Save failed');
+      }
     });
   }, []);
 
@@ -79,9 +74,11 @@ export default function App() {
   }, []);
 
   const boardMode = useCanvasStore((s) => s.boardMode);
+  const toast = useCanvasStore((s) => s.toast);
+  const toastKey = useCanvasStore((s) => s.toastKey);
 
   return (
-    <div className={`flex flex-col h-screen w-screen overflow-hidden ${boardMode === 'whiteboard' ? 'bg-gray-100' : 'bg-[#0f0f1a]'} select-none`}>
+    <div className={`flex flex-col h-screen w-screen overflow-hidden ${boardMode === 'whiteboard' ? 'bg-[#F9F9FB]' : 'bg-[#0f0f1a]'} select-none`}>
       <TitleBar />
       
       {/* TOP HEADER BAR */}
@@ -111,6 +108,13 @@ export default function App() {
           <PageTabs canvasRef={canvasRef} />
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div key={toastKey} className="toast">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

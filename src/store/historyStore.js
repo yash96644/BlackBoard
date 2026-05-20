@@ -1,11 +1,13 @@
 import { create } from 'zustand';
+import { redrawCanvas } from '../utils/strokeCommit';
+import { useBoardStore } from './boardStore';
 
 export const useHistoryStore = create((set, get) => ({
   past:   [],
   future: [],
 
-  pushSnapshot: (imageData) => set((s) => ({
-    past:   [...s.past.slice(-49), imageData],
+  pushSnapshot: (strokes) => set((s) => ({
+    past:   [...s.past.slice(-49), strokes],
     future: [],
   })),
 
@@ -16,16 +18,21 @@ export const useHistoryStore = create((set, get) => ({
     const committed = committedRef?.current;
     if (!committed) return;
 
-    const ctx     = committed.getContext('2d');
-    const current = ctx.getImageData(
-      0, 0, committed.width, committed.height
-    );
-    const prev    = past[past.length - 1];
+    const activePage = useBoardStore.getState().activePage;
+    const currentStrokes = useBoardStore.getState().pages.find(p => p.id === activePage)?.data || [];
+    
+    const nextPast = past.slice(0, -1);
+    const restoredStrokes = nextPast.length > 0 ? nextPast[nextPast.length - 1] : [];
 
-    ctx.putImageData(prev, 0, 0);
+    // Redraw using optimized vector-based renderer
+    redrawCanvas(committed, restoredStrokes);
+
+    // Sync state with boardStore
+    useBoardStore.getState().savePageData(activePage, restoredStrokes);
+
     set({
-      past:   past.slice(0, -1),
-      future: [current, ...future],
+      past:   nextPast,
+      future: [currentStrokes, ...future],
     });
   },
 
@@ -36,14 +43,18 @@ export const useHistoryStore = create((set, get) => ({
     const committed = committedRef?.current;
     if (!committed) return;
 
-    const ctx     = committed.getContext('2d');
-    const current = ctx.getImageData(
-      0, 0, committed.width, committed.height
-    );
+    const activePage = useBoardStore.getState().activePage;
+    const currentStrokes = useBoardStore.getState().pages.find(p => p.id === activePage)?.data || [];
+    const nextStrokes = future[0];
 
-    ctx.putImageData(future[0], 0, 0);
+    // Redraw using optimized vector-based renderer
+    redrawCanvas(committed, nextStrokes);
+
+    // Sync state with boardStore
+    useBoardStore.getState().savePageData(activePage, nextStrokes);
+
     set({
-      past:   [...past, current],
+      past:   [...past, currentStrokes],
       future: future.slice(1),
     });
   },
@@ -52,16 +63,19 @@ export const useHistoryStore = create((set, get) => ({
     const committed = committedRef?.current;
     if (!committed) return;
 
-    const ctx     = committed.getContext('2d');
-    const current = ctx.getImageData(
-      0, 0, committed.width, committed.height
-    );
+    const activePage = useBoardStore.getState().activePage;
+    const currentStrokes = useBoardStore.getState().pages.find(p => p.id === activePage)?.data || [];
+
+    const ctx = committed.getContext('2d');
+    ctx.clearRect(0, 0, committed.width, committed.height);
+
+    // Sync empty array to boardStore
+    useBoardStore.getState().savePageData(activePage, []);
 
     set((s) => ({
-      past:   [...s.past.slice(-49), current],
+      past:   [...s.past.slice(-49), currentStrokes],
       future: [],
     }));
-    ctx.clearRect(0, 0, committed.width, committed.height);
   },
 
   reset: () => set({ past: [], future: [] }),

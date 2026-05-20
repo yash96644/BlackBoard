@@ -2,7 +2,7 @@ import React from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import { PRESET_COLORS, BRUSH_PRESETS } from '../../utils/constants';
 
-export default function ColorBrushPanel() {
+export default function ColorBrushPanel({ onClose }) {
   const { color, setColor, brushSize, setBrushSize, opacity, setOpacity, boardMode } = useCanvasStore();
   const isWhiteboard = boardMode === 'whiteboard';
 
@@ -17,7 +17,10 @@ export default function ColorBrushPanel() {
           {PRESET_COLORS.map(c => (
             <div
               key={c}
-              onClick={() => setColor(c)}
+              onClick={() => {
+                setColor(c);
+                onClose?.();
+              }}
               className={`w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform
                 ring-2 ring-offset-1 ring-transparent
                 ${isWhiteboard 

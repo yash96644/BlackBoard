@@ -11,7 +11,15 @@ export const useCanvasStore = create((set) => ({
   boardColor:      '#1a1a2e',
   zoom:            1.0,
   boardMode:       'blackboard',
+  panOffset:       { x: 0, y: 0 },
+  toast:           null,
+  toastKey:        0,
 
+  showToast: (message) => set((s) => ({
+    toast: message,
+    toastKey: s.toastKey + 1
+  })),
+ 
   setActiveTool: (tool) => set((s) => ({
     activeTool: tool,
     brushSize:  TOOL_DEFAULTS[tool]?.size   ?? s.brushSize,
@@ -23,10 +31,11 @@ export const useCanvasStore = create((set) => ({
   setPressureCurve:   (curve)   => set({ pressureCurve: curve }),
   setPressureEnabled: (val)     => set({ pressureEnabled: val }),
   setZoom:            (zoom)    => set({ zoom: Math.max(0.1, Math.min(5.0, zoom)) }),
+  setPanOffset:       (panOffset) => set({ panOffset }),
   setBoardColor:      (color)   => set({ boardColor: color }),
   setBoardMode:       (mode)    => set({
     boardMode: mode,
-    boardColor: mode === 'blackboard' ? '#1a1a2e' : '#FFFFFF',
+    boardColor: mode === 'blackboard' ? '#1a1a2e' : '#F9F9FB',
     color: mode === 'blackboard' ? '#FFFFFF' : '#000000',
   }),
 }));

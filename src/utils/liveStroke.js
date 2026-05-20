@@ -1,4 +1,5 @@
 import { TOOLS } from './constants';
+import { useCanvasStore } from '../store/canvasStore';
 
 /** Squared distance threshold (2px) — matches drawingUtils.shouldAddPoint */
 export const MIN_POINT_DIST_SQ = 4;
@@ -15,21 +16,23 @@ export function shouldAddPoint(last, x, y) {
  */
 export function captureCanvasTransform(canvas) {
   const rect = canvas.getBoundingClientRect();
+  const { zoom, panOffset } = useCanvasStore.getState();
   return {
-    scaleX: canvas.width / rect.width,
-    scaleY: canvas.height / rect.height,
     left: rect.left,
     top: rect.top,
+    zoom,
+    panOffset: { ...panOffset },
   };
 }
 
 export function pointFromEvent(t, e, pressure = 0.5) {
   return [
-    (e.clientX - t.left) * t.scaleX,
-    (e.clientY - t.top) * t.scaleY,
+    (e.clientX - t.left - t.panOffset.x) / t.zoom,
+    (e.clientY - t.top - t.panOffset.y) / t.zoom,
     pressure,
   ];
 }
+
 
 /**
  * O(1) segment draw — only the newest piece of the stroke (live layer).
@@ -45,11 +48,11 @@ export function drawLiveSegment(ctx, from, to, tool, color, brushSize, opacity) 
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = color;
+  ctx.strokeStyle = tool === TOOLS.LASER ? '#EF4444' : color;
   ctx.globalAlpha = tool === TOOLS.MARKER ? opacity * 0.5 : opacity;
 
   if (tool === TOOLS.LASER) {
-    ctx.shadowColor = color;
+    ctx.shadowColor = '#EF4444';
     ctx.shadowBlur = 8;
   }
 
@@ -75,10 +78,10 @@ export function drawLiveDot(ctx, point, tool, color, brushSize, opacity) {
   );
 
   ctx.save();
-  ctx.fillStyle = color;
+  ctx.fillStyle = tool === TOOLS.LASER ? '#EF4444' : color;
   ctx.globalAlpha = tool === TOOLS.MARKER ? opacity * 0.5 : opacity;
   if (tool === TOOLS.LASER) {
-    ctx.shadowColor = color;
+    ctx.shadowColor = '#EF4444';
     ctx.shadowBlur = 8;
   }
   ctx.beginPath();

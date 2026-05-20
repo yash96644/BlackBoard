@@ -12,16 +12,7 @@ const BoardControls = React.memo(({ onSave, canvasRef }) => {
   const handleRedo = () => redo(canvasRef);
 
   const clearBoard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    
-    // Fix: Only clear the canvas pixels. 
-    // Do NOT fill with boardColor or draw the grid manually.
-    // The background color and grid are handled cleanly by the CSS wrapper in BlackboardCanvas.jsx.
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    useHistoryStore.getState().pushSnapshot(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    useHistoryStore.getState().clear(canvasRef);
   };
 
   return (

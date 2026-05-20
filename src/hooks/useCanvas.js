@@ -1,25 +1,32 @@
-import { useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useCallback } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
-import { CANVAS_SIZE, getDefaultPanOffset, buildCanvasTransform } from '../utils/canvasLifecycle';
+import { useBoardStore } from '../store/boardStore';
+import { redrawCanvas } from '../utils/strokeCommit';
+import { getDefaultPanOffset } from '../utils/canvasLifecycle';
 
 export function useCanvas(committedRef, activeRef, containerRef) {
-  const { zoom, setZoom } = useCanvasStore();
-  const panOffset = useRef(getDefaultPanOffset(window.innerWidth, window.innerHeight));
+  const { zoom, setZoom, panOffset, setPanOffset } = useCanvasStore();
 
   const applyTransform = useCallback(() => {
-    const { x, y } = panOffset.current;
-    const z = useCanvasStore.getState().zoom;
-    const style = buildCanvasTransform(x, y, z);
+    const committed = committedRef?.current;
+    if (!committed) return;
 
-    for (const ref of [committedRef, activeRef]) {
-      const el = ref?.current;
-      if (!el) continue;
-      el.style.transform = style.transform;
-      el.style.transformOrigin = style.transformOrigin;
+    const activePage = useBoardStore.getState().activePage;
+    const page = useBoardStore.getState().pages.find((p) => p.id === activePage);
+    const strokes = page?.data || [];
+    redrawCanvas(committed, strokes);
+  }, [committedRef]);
+
+  // Set initial pan offset centered in the viewport on mount
+  useEffect(() => {
+    const currentPan = useCanvasStore.getState().panOffset;
+    if (currentPan.x === 0 && currentPan.y === 0) {
+      const initialPan = getDefaultPanOffset(window.innerWidth, window.innerHeight);
+      setPanOffset(initialPan);
     }
-  }, [committedRef, activeRef]);
+  }, [setPanOffset]);
 
-  // Sync transforms before paint so drawing aligns with the visible board
+  // Redraw when page or zoom changes
   useLayoutEffect(() => {
     applyTransform();
   }, [zoom, applyTransform]);
@@ -42,24 +49,28 @@ export function useCanvas(committedRef, activeRef, containerRef) {
         const mouseY = e.clientY - rect.top;
 
         const zoomRatio = newZoom / currentZoom;
-        panOffset.current = {
-          x: mouseX - zoomRatio * (mouseX - panOffset.current.x),
-          y: mouseY - zoomRatio * (mouseY - panOffset.current.y),
+        const currentPan = useCanvasStore.getState().panOffset;
+        const newPan = {
+          x: mouseX - zoomRatio * (mouseX - currentPan.x),
+          y: mouseY - zoomRatio * (mouseY - currentPan.y),
         };
 
+        setPanOffset(newPan);
         setZoom(newZoom);
       } else {
-        panOffset.current = {
-          x: panOffset.current.x - e.deltaX,
-          y: panOffset.current.y - e.deltaY,
+        const currentPan = useCanvasStore.getState().panOffset;
+        const newPan = {
+          x: currentPan.x - e.deltaX,
+          y: currentPan.y - e.deltaY,
         };
+        setPanOffset(newPan);
         applyTransform();
       }
     };
 
     target.addEventListener('wheel', handleWheel, { passive: false });
     return () => target.removeEventListener('wheel', handleWheel);
-  }, [activeRef, committedRef, setZoom, applyTransform]);
+  }, [activeRef, committedRef, setZoom, setPanOffset, applyTransform]);
 
   const zoomIn = useCallback(() => {
     const current = useCanvasStore.getState().zoom;
@@ -73,9 +84,10 @@ export function useCanvas(committedRef, activeRef, containerRef) {
 
   const resetZoom = useCallback(() => {
     setZoom(1.0);
-    panOffset.current = getDefaultPanOffset(window.innerWidth, window.innerHeight);
+    const initialPan = getDefaultPanOffset(window.innerWidth, window.innerHeight);
+    setPanOffset(initialPan);
     applyTransform();
-  }, [setZoom, applyTransform]);
+  }, [setZoom, setPanOffset, applyTransform]);
 
-  return { zoomIn, zoomOut, resetZoom, panOffset, applyTransform, CANVAS_SIZE };
+  return { zoomIn, zoomOut, resetZoom, panOffset, applyTransform };
 }

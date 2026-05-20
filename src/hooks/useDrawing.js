@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
 import { useHistoryStore } from '../store/historyStore';
+import { useBoardStore } from '../store/boardStore';
 import { drawShapePreview } from '../utils/drawingUtils';
 import { drawFreehandStroke } from '../utils/strokeCommit';
 import { TOOLS } from '../utils/constants';
@@ -35,7 +36,7 @@ export function useDrawing(committedRef, activeRef) {
     const s = useCanvasStore.getState();
     toolRef.current = s.activeTool;
     styleRef.current = {
-      color: s.color,
+      color: s.activeTool === TOOLS.LASER ? '#EF4444' : s.color,
       brushSize: s.brushSize,
       opacity: s.opacity,
       pressureEnabled: s.pressureEnabled,
@@ -46,25 +47,13 @@ export function useDrawing(committedRef, activeRef) {
     const active = activeRef.current;
     const ctx = getActiveCtx();
     if (!active || !ctx) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, active.width, active.height);
+    ctx.restore();
   };
 
-  const scheduleHistorySnapshot = (committedCtx, committed) => {
-    const capture = () => {
-      try {
-        pushSnapshot(
-          committedCtx.getImageData(0, 0, committed.width, committed.height)
-        );
-      } catch {
-        /* ignore */
-      }
-    };
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(capture, { timeout: 120 });
-    } else {
-      setTimeout(capture, 0);
-    }
-  };
+  // Vector-based snapshot scheduling runs instantly and synchronously.
 
   const handlePointerDown = useCallback((e) => {
     const canvas = activeRef.current;
@@ -95,10 +84,16 @@ export function useDrawing(committedRef, activeRef) {
     const activeCtx = getActiveCtx();
     if (!activeCtx) return;
 
+    const dpr = window.devicePixelRatio || 1;
+    const { zoom, panOffset } = useCanvasStore.getState();
+    activeCtx.save();
+    activeCtx.setTransform(zoom * dpr, 0, 0, zoom * dpr, panOffset.x * dpr, panOffset.y * dpr);
+
     if (FREEHAND_TOOLS.includes(tool)) {
       const { color, brushSize, opacity } = styleRef.current;
       drawLiveDot(activeCtx, pt, tool, color, brushSize, opacity);
     }
+    activeCtx.restore();
   }, [committedRef, activeRef]);
 
   const handlePointerMove = useCallback((e) => {
@@ -112,6 +107,15 @@ export function useDrawing(committedRef, activeRef) {
 
     const tool = toolRef.current;
     const { color, brushSize, opacity } = styleRef.current;
+
+    const dpr = window.devicePixelRatio || 1;
+    const { zoom, panOffset } = useCanvasStore.getState();
+    activeCtx.save();
+    activeCtx.setTransform(zoom * dpr, 0, 0, zoom * dpr, panOffset.x * dpr, panOffset.y * dpr);
+    if (committedCtx) {
+      committedCtx.save();
+      committedCtx.setTransform(zoom * dpr, 0, 0, zoom * dpr, panOffset.x * dpr, panOffset.y * dpr);
+    }
 
     const coalesced = e.getCoalescedEvents?.() ?? [e];
 
@@ -158,6 +162,11 @@ export function useDrawing(committedRef, activeRef) {
         lastLivePoint.current = pt;
       }
     }
+
+    activeCtx.restore();
+    if (committedCtx) {
+      committedCtx.restore();
+    }
   }, [activeRef, committedRef]);
 
   const commitStroke = useCallback(() => {
@@ -170,10 +179,28 @@ export function useDrawing(committedRef, activeRef) {
     const tool = toolRef.current;
     const { color, brushSize, opacity, pressureEnabled } = styleRef.current;
 
+    const dpr = window.devicePixelRatio || 1;
+    const { zoom, panOffset } = useCanvasStore.getState();
+    committedCtx.save();
+    committedCtx.setTransform(zoom * dpr, 0, 0, zoom * dpr, panOffset.x * dpr, panOffset.y * dpr);
+
+    let newStroke = null;
+
     if (tool === TOOLS.ERASER) {
       // Tap-only erase (no move events)
       if (points.current.length === 1) {
         eraseDotOnCommitted(committedCtx, points.current[0], brushSize);
+      }
+      if (points.current.length > 0) {
+        newStroke = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          tool,
+          points: [...points.current],
+          color: 'rgba(0,0,0,1)',
+          brushSize,
+          opacity: 1.0,
+          pressureEnabled: false,
+        };
       }
     } else if (FREEHAND_TOOLS.includes(tool) && points.current.length > 0) {
       clearActiveLayer();
@@ -187,6 +214,15 @@ export function useDrawing(committedRef, activeRef) {
         pressureEnabled,
         true
       );
+      newStroke = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        tool,
+        points: [...points.current],
+        color,
+        brushSize,
+        opacity,
+        pressureEnabled,
+      };
     } else if (SHAPE_TOOLS.includes(tool) && points.current.length >= 1) {
       clearActiveLayer();
       const last = points.current[points.current.length - 1];
@@ -199,11 +235,30 @@ export function useDrawing(committedRef, activeRef) {
         brushSize,
         opacity
       );
+      newStroke = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        tool,
+        startPoint: { ...startPoint.current },
+        endPoint: { x: last[0], y: last[1] },
+        color,
+        brushSize,
+        opacity,
+      };
     } else {
       clearActiveLayer();
     }
 
-    scheduleHistorySnapshot(committedCtx, committed);
+    committedCtx.restore();
+
+    if (newStroke) {
+      const activePage = useBoardStore.getState().activePage;
+      const currentPageData = useBoardStore.getState().pages.find(p => p.id === activePage)?.data || [];
+      const updatedStrokes = Array.isArray(currentPageData) ? [...currentPageData, newStroke] : [newStroke];
+
+      // Save vector data to store
+      useBoardStore.getState().savePageData(activePage, updatedStrokes);
+      pushSnapshot(updatedStrokes);
+    }
 
     points.current = [];
     lastLivePoint.current = null;

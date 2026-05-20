@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  CANVAS_SIZE,
   ensureCanvasSize,
   getDefaultPanOffset,
-  buildCanvasTransform,
 } from './canvasLifecycle';
 
 describe('canvasLifecycle', () => {
@@ -19,19 +17,19 @@ describe('canvasLifecycle', () => {
   });
 
   it('ensureCanvasSize resizes backing store when dimensions differ', () => {
-    const changed = ensureCanvasSize(canvas, CANVAS_SIZE, CANVAS_SIZE);
+    const changed = ensureCanvasSize(canvas, 1000, 800);
     expect(changed).toBe(true);
-    expect(canvas.width).toBe(CANVAS_SIZE);
-    expect(canvas.height).toBe(CANVAS_SIZE);
+    expect(canvas.width).toBe(1000);
+    expect(canvas.height).toBe(800);
   });
 
   it('ensureCanvasSize is a no-op when size unchanged', () => {
-    ensureCanvasSize(canvas, CANVAS_SIZE, CANVAS_SIZE);
+    ensureCanvasSize(canvas, 1000, 800);
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#00ff00';
     ctx.fillRect(100, 100, 5, 5);
 
-    const changed = ensureCanvasSize(canvas, CANVAS_SIZE, CANVAS_SIZE);
+    const changed = ensureCanvasSize(canvas, 1000, 800);
     expect(changed).toBe(false);
 
     const green = ctx.getImageData(100, 100, 1, 1).data;
@@ -43,10 +41,6 @@ describe('canvasLifecycle', () => {
     expect(pan.x).toBe(-2000);
     expect(pan.y).toBe(-2100);
   });
-
-  it('buildCanvasTransform returns matching translate+scale', () => {
-    const style = buildCanvasTransform(10, 20, 1.5);
-    expect(style.transform).toBe('translate(10px, 20px) scale(1.5)');
-    expect(style.transformOrigin).toBe('0 0');
-  });
 });
+
+

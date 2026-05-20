@@ -90,7 +90,15 @@ const LeftSidebar = React.memo(() => {
       </div>
 
       {/* Floating Panel */}
-      {showColorPanel && <ColorBrushPanel />}
+      {showColorPanel && (
+        <>
+          <div
+            onClick={() => setShowColorPanel(false)}
+            className="fixed inset-0 z-[99]"
+          />
+          <ColorBrushPanel onClose={() => setShowColorPanel(false)} />
+        </>
+      )}
     </div>
   );
 });
