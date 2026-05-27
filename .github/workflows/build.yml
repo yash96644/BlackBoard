@@ -3,7 +3,7 @@ name: Build Blackboard — Mac + Windows
 on:
   push:
     branches: [main]
-  workflow_dispatch:       # allow manual trigger too
+  workflow_dispatch:
 
 jobs:
 
@@ -22,11 +22,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate icons
-        run: npx electron-icon-builder --input=assets/icon.png --output=assets/
+      - name: Build Vite
+        run: npm run build
 
-      - name: Build for macOS
-        run: npm run electron:build:mac
+      - name: Build Mac app
+        run: npx electron-builder --mac --publish never
+        env:
+          NODE_ENV: production
 
       - name: Upload macOS build
         uses: actions/upload-artifact@v4
@@ -34,7 +36,6 @@ jobs:
           name: mac-build
           path: |
             release/*.dmg
-            release/*.zip
           retention-days: 30
 
   build-windows:
@@ -52,11 +53,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate icons
-        run: npx electron-icon-builder --input=assets/icon.png --output=assets/
+      - name: Build Vite
+        run: npm run build
 
-      - name: Build for Windows
-        run: npm run electron:build:win
+      - name: Build Windows app
+        run: npx electron-builder --win --publish never
+        env:
+          NODE_ENV: production
 
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
@@ -64,5 +67,4 @@ jobs:
           name: windows-build
           path: |
             release/*.exe
-            release/*.appx
           retention-days: 30

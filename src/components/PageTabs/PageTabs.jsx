@@ -35,7 +35,7 @@ const PageTabs = React.memo(({ canvasRef }) => {
   return (
     <div className={`absolute left-20 bottom-4 rounded-xl shadow-sm p-1.5 flex items-center gap-1 z-40 border
       ${isWhiteboard ? 'bg-white border-gray-200' : 'bg-[#1a1a2e] border-[#2d2d4e]'}`}>
-      
+
       {pages.map((page) => {
         const isActive = activePage === page.id;
         return (
@@ -44,8 +44,8 @@ const PageTabs = React.memo(({ canvasRef }) => {
             onClick={() => setActivePage(page.id, canvasRef)}
             className={`
               px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors
-              ${isActive 
-                ? (isWhiteboard ? 'bg-indigo-50 text-indigo-700' : 'bg-[rgba(99,102,241,0.15)] text-[#818cf8]') 
+              ${isActive
+                ? (isWhiteboard ? 'bg-indigo-50 text-indigo-700' : 'bg-[rgba(99,102,241,0.15)] text-[#818cf8]')
                 : (isWhiteboard ? 'text-gray-600 hover:bg-gray-50' : 'text-gray-400 hover:bg-[#1e1e3a] hover:text-gray-200')}
             `}
           >

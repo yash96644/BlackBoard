@@ -36,7 +36,7 @@ export function useDrawing(committedRef, activeRef) {
     const s = useCanvasStore.getState();
     toolRef.current = s.activeTool;
     styleRef.current = {
-      color: s.activeTool === TOOLS.LASER ? '#EF4444' : s.color,
+      color: s.color,
       brushSize: s.brushSize,
       opacity: s.opacity,
       pressureEnabled: s.pressureEnabled,
